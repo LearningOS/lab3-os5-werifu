@@ -4,7 +4,7 @@ use crate::config::MAX_SYSCALL_NUM;
 use crate::loader::get_app_data_by_name;
 use crate::mm::{translate_va, translated_refmut, translated_str, MemorySet, PhysAddr, VirtAddr};
 use crate::task::{
-    add_task, current_task, current_user_token, exit_current_and_run_next,
+    add_task, current_task, current_user_token, exit_current_and_run_next, get_current_task_info,
     suspend_current_and_run_next, TaskStatus,
 };
 use crate::timer::get_time_us;
@@ -126,7 +126,14 @@ pub fn sys_get_time(ts: *mut TimeVal, _tz: usize) -> isize {
 
 // YOUR JOB: 引入虚地址后重写 sys_task_info
 pub fn sys_task_info(ti: *mut TaskInfo) -> isize {
-    -1
+    let virt_addr = VirtAddr(ti as usize);
+    let token = current_user_token();
+    if let Some(phys_addr) = translate_va(token, virt_addr) {
+        get_current_task_info(phys_addr.0 as *mut TaskInfo);
+        0
+    } else {
+        -1
+    }
 }
 
 // YOUR JOB: 实现sys_set_priority，为任务添加优先级

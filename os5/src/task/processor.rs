@@ -4,11 +4,12 @@
 //! the current running state of CPU is recorded,
 //! and the replacement and transfer of control flow of different applications are executed.
 
-
 use super::__switch;
 use super::{fetch_task, TaskStatus};
 use super::{TaskContext, TaskControlBlock};
 use crate::sync::UPSafeCell;
+use crate::syscall::TaskInfo;
+use crate::timer::get_time_ms;
 use crate::trap::TrapContext;
 use alloc::sync::Arc;
 use lazy_static::*;
@@ -36,6 +37,16 @@ impl Processor {
     }
     pub fn current(&self) -> Option<Arc<TaskControlBlock>> {
         self.current.as_ref().map(|task| Arc::clone(task))
+    }
+}
+
+impl Processor {
+    /// syscall_times[id] += 1
+    pub fn add_syscall_times(&self, syscall_id: usize) {
+        self.current()
+            .unwrap()
+            .inner_exclusive_access()
+            .syscall_times[syscall_id] += 1;
     }
 }
 
@@ -101,5 +112,23 @@ pub fn schedule(switched_task_cx_ptr: *mut TaskContext) {
     drop(processor);
     unsafe {
         __switch(switched_task_cx_ptr, idle_task_cx_ptr);
+    }
+}
+
+/// Record a syscall
+pub fn record_syscall(syscall_id: usize) {
+    PROCESSOR.exclusive_access().add_syscall_times(syscall_id);
+}
+
+/// Write the info of the task into *ti
+pub fn get_current_task_info(ti: *mut TaskInfo) {
+    let task = current_task().unwrap();
+    let inner = task.inner_exclusive_access();
+    unsafe {
+        *ti = TaskInfo {
+            status: TaskStatus::Running,
+            syscall_times: inner.syscall_times,
+            time: get_time_ms() - inner.start_time,
+        };
     }
 }
