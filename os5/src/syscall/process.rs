@@ -5,7 +5,7 @@ use crate::loader::get_app_data_by_name;
 use crate::mm::{translate_va, translated_refmut, translated_str, MemorySet, PhysAddr, VirtAddr};
 use crate::task::{
     add_task, current_task, current_user_token, exit_current_and_run_next, get_current_task_info,
-    suspend_current_and_run_next, TaskStatus, task_mmap, task_munmap
+    suspend_current_and_run_next, TaskStatus, task_mmap, task_munmap, set_task_priority,
 };
 use crate::timer::get_time_us;
 use alloc::sync::Arc;
@@ -137,8 +137,13 @@ pub fn sys_task_info(ti: *mut TaskInfo) -> isize {
 }
 
 // YOUR JOB: 实现sys_set_priority，为任务添加优先级
-pub fn sys_set_priority(_prio: isize) -> isize {
-    -1
+pub fn sys_set_priority(prio: isize) -> isize {
+    if prio < 2 {
+        println!("invalid priority {}", prio);
+        return -1;
+    }
+    set_task_priority(prio);
+    prio
 }
 
 // YOUR JOB: 扩展内核以实现 sys_mmap 和 sys_munmap
@@ -160,9 +165,12 @@ pub fn sys_spawn(path: *const u8) -> isize {
     if let Some(data) = get_app_data_by_name(path.as_str()) {
         let task = current_task().unwrap();
         let new_task = task.spawn(data);
+        let pid = new_task.pid.0;
         add_task(new_task);
-        0
+        assert!(pid < isize::MAX as usize);
+        pid as isize
     } else {
+        println!("spawn fail: app {} not found", path);
         -1
     }
 }

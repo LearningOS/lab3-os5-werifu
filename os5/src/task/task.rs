@@ -2,7 +2,7 @@
 
 use super::TaskContext;
 use super::{pid_alloc, KernelStack, PidHandle};
-use crate::config::{TRAP_CONTEXT, MAX_SYSCALL_NUM};
+use crate::config::{MAX_SYSCALL_NUM, TRAP_CONTEXT};
 use crate::mm::{MemorySet, PhysPageNum, VirtAddr, KERNEL_SPACE};
 use crate::sync::UPSafeCell;
 use crate::timer::get_time_ms;
@@ -51,6 +51,10 @@ pub struct TaskControlBlockInner {
     pub syscall_times: [u32; MAX_SYSCALL_NUM],
     /// Start time of a task (ms)
     pub start_time: usize,
+    /// Priority of the task
+    pub priority: isize,
+    /// Priority * times, a task with smallest pass would be run in next schedule
+    pub pass: isize,
 }
 
 /// Simple access to its internal fields
@@ -110,6 +114,8 @@ impl TaskControlBlock {
                     exit_code: 0,
                     syscall_times: [0; MAX_SYSCALL_NUM],
                     start_time: get_time_ms(),
+                    priority: 16,
+                    pass: 0,
                 })
             },
         };
@@ -183,6 +189,8 @@ impl TaskControlBlock {
                     exit_code: 0,
                     syscall_times: [0; MAX_SYSCALL_NUM],
                     start_time: 0,
+                    priority: 16,
+                    pass: 0,
                 })
             },
         });
@@ -230,6 +238,8 @@ impl TaskControlBlock {
                     exit_code: 0,
                     syscall_times: [0; MAX_SYSCALL_NUM],
                     start_time: 0,
+                    priority: 16,
+                    pass: 0,
                 })
             },
         });
@@ -249,7 +259,6 @@ impl TaskControlBlock {
         task_control_block
         // ---- release parent PCB automatically
         // **** release children PCB automatically
-
     }
 }
 

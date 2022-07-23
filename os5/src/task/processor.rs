@@ -120,6 +120,16 @@ impl Processor {
         0
     }
 }
+
+/// for priority
+impl Processor {
+    pub fn set_task_priority(&self, prio: isize) {
+        let task = self.current().unwrap();
+        let mut inner = task.inner_exclusive_access();
+        inner.priority = prio;
+    }
+}
+
 lazy_static! {
     /// PROCESSOR instance through lazy_static!
     pub static ref PROCESSOR: UPSafeCell<Processor> = unsafe { UPSafeCell::new(Processor::new()) };
@@ -209,7 +219,11 @@ pub fn task_mmap(start: usize, len: usize, port: usize) -> isize {
 }
 
 /// for lab. unmap
-/// for lab. unmap
 pub fn task_munmap(start: usize, len: usize) -> isize {
     PROCESSOR.exclusive_access().task_munmap(start, len)
+}
+
+/// for task priority
+pub fn set_task_priority(prio: isize) {
+    PROCESSOR.exclusive_access().set_task_priority(prio)
 }
