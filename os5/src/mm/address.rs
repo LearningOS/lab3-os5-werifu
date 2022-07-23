@@ -244,3 +244,11 @@ where
 
 /// a simple range structure for virtual page number
 pub type VPNRange = SimpleRange<VirtPageNum>;
+
+
+impl PhysAddr {
+    /// new physical address from ppn + offset
+    pub fn combine(ppn: PhysPageNum, offset: usize) -> Self {
+        PhysAddr(PhysAddr::from(ppn).0 | (offset & (PAGE_SIZE - 1)))
+    }
+}
