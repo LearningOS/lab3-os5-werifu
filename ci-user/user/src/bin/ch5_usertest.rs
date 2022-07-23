@@ -5,25 +5,25 @@
 extern crate user_lib;
 
 static TESTS: &[&str] = &[
-    // "ch2b_hello_world\0",
-    // "ch2b_power_3\0",
-    // "ch2b_power_5\0",
-    // "ch2b_power_7\0",
-    // "ch3b_yield0\0",
-    // "ch3b_yield1\0",
-    // "ch3b_yield2\0",
-    // "ch3b_sleep\0",
-    // "ch3b_sleep1\0",
+    "ch2b_hello_world\0",
+    "ch2b_power_3\0",
+    "ch2b_power_5\0",
+    "ch2b_power_7\0",
+    "ch3b_yield0\0",
+    "ch3b_yield1\0",
+    "ch3b_yield2\0",
+    "ch3b_sleep\0",
+    "ch3b_sleep1\0",
     "ch4_mmap0\0",
     "ch4_mmap1\0",
     "ch4_mmap2\0",
     "ch4_mmap3\0",
     "ch4_unmap\0",
     "ch4_unmap2\0",
-    // "ch5_spawn0\0",
-    // "ch5_spawn1\0",
-    // "ch5_setprio\0",
-    // "ch5_stride\0",
+    "ch5_spawn0\0",
+    "ch5_spawn1\0",
+    "ch5_setprio\0",
+    "ch5_stride\0",
 ];
 static STEST: &str = "ch5_stride\0";
 

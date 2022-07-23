@@ -8,7 +8,7 @@ use super::__switch;
 use super::{fetch_task, TaskStatus};
 use super::{TaskContext, TaskControlBlock};
 use crate::config::PAGE_SIZE;
-use crate::mm::{VirtAddr, VirtPageNum, MapPermission, VPNRange};
+use crate::mm::{MapPermission, VPNRange, VirtAddr, VirtPageNum};
 use crate::sync::UPSafeCell;
 use crate::syscall::TaskInfo;
 use crate::timer::get_time_ms;
@@ -54,7 +54,7 @@ impl Processor {
 
 /// for map & unmap
 impl Processor {
-    fn task_map(&self, start: usize, len: usize, port: usize) -> isize {
+    fn task_mmap(&self, start: usize, len: usize, port: usize) -> isize {
         if start & (PAGE_SIZE - 1) != 0 {
             println!(
                 "expect the start address to be aligned with a page, but get an invalid start: {:#x}",
@@ -98,7 +98,6 @@ impl Processor {
             return -1;
         }
 
-
         let task = self.current().unwrap();
         let mut inner = task.inner_exclusive_access();
         let memory_set = &mut inner.memory_set;
@@ -106,7 +105,7 @@ impl Processor {
         // check valid
         let start_vpn = VirtPageNum::from(VirtAddr(start));
         let end_vpn = VirtPageNum::from(VirtAddr(start + len).ceil());
-        for vpn in start_vpn.0 .. end_vpn.0 {
+        for vpn in start_vpn.0..end_vpn.0 {
             if let Some(pte) = memory_set.translate(VirtPageNum(vpn)) {
                 if !pte.is_valid() {
                     println!("vpn {} is not valid before unmap", vpn);
@@ -126,7 +125,7 @@ impl Processor {
     pub fn set_task_priority(&self, prio: isize) {
         let task = self.current().unwrap();
         let mut inner = task.inner_exclusive_access();
-        inner.priority = prio;
+        inner.priority = prio as usize;
     }
 }
 
@@ -215,7 +214,7 @@ pub fn get_current_task_info(ti: *mut TaskInfo) {
 
 /// for lab. map
 pub fn task_mmap(start: usize, len: usize, port: usize) -> isize {
-    PROCESSOR.exclusive_access().task_map(start, len, port)
+    PROCESSOR.exclusive_access().task_mmap(start, len, port)
 }
 
 /// for lab. unmap

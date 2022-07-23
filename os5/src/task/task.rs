@@ -52,9 +52,9 @@ pub struct TaskControlBlockInner {
     /// Start time of a task (ms)
     pub start_time: usize,
     /// Priority of the task
-    pub priority: isize,
-    /// Priority * times, a task with smallest pass would be run in next schedule
-    pub pass: isize,
+    pub priority: usize,
+    /// Priority * times, a task with smallest pass would be run in next schedule, or we can call it stride
+    pub pass: usize,
 }
 
 /// Simple access to its internal fields

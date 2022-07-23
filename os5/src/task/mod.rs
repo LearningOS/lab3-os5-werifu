@@ -17,20 +17,20 @@ mod switch;
 #[allow(clippy::module_inception)]
 mod task;
 
+use crate::config::BIG_STRIDE;
 use crate::loader::get_app_data_by_name;
 use alloc::sync::Arc;
-use lazy_static::*;
-use manager::fetch_task;
-use switch::__switch;
-pub use task::{TaskControlBlock, TaskStatus};
-
 pub use context::TaskContext;
+use lazy_static::*;
 pub use manager::add_task;
+use manager::fetch_task;
 pub use pid::{pid_alloc, KernelStack, PidHandle};
 pub use processor::{
     current_task, current_trap_cx, current_user_token, get_current_task_info, record_syscall,
     run_tasks, schedule, set_task_priority, take_current_task, task_mmap, task_munmap,
 };
+use switch::__switch;
+pub use task::{TaskControlBlock, TaskStatus};
 
 /// Make current task suspended and switch to the next task
 pub fn suspend_current_and_run_next() {
@@ -42,6 +42,8 @@ pub fn suspend_current_and_run_next() {
     let task_cx_ptr = &mut task_inner.task_cx as *mut TaskContext;
     // Change status to Ready
     task_inner.task_status = TaskStatus::Ready;
+    // Add a stride to the task
+    task_inner.pass = task_inner.pass + BIG_STRIDE / task_inner.priority;
     drop(task_inner);
     // ---- release current PCB
 

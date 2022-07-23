@@ -3,7 +3,6 @@
 //! It is only used to manage processes and schedule process based on ready queue.
 //! Other CPU process monitoring functions are in Processor.
 
-
 use super::TaskControlBlock;
 use crate::sync::UPSafeCell;
 use alloc::collections::VecDeque;
@@ -24,8 +23,25 @@ impl TaskManager {
     }
     /// Add process back to ready queue
     pub fn add(&mut self, task: Arc<TaskControlBlock>) {
+        // insert the new task into a proper position
+        let inner = task.inner_exclusive_access();
+        let pass = inner.pass;
+        // drop the ownership of inner
+        drop(inner);
+
+        let len = self.ready_queue.len();
+        for idx in 0..len {
+            let queue_task = self.ready_queue.get_mut(idx).unwrap();
+            let pass1 = queue_task.inner_exclusive_access().pass;
+            // keep the queue head owns the smallest pass
+            if pass < pass1 {
+                self.ready_queue.insert(idx, task);
+                return
+            }
+        }
         self.ready_queue.push_back(task);
     }
+
     /// Take a process out of the ready queue
     pub fn fetch(&mut self) -> Option<Arc<TaskControlBlock>> {
         self.ready_queue.pop_front()
