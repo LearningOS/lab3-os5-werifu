@@ -7,6 +7,8 @@
 use super::__switch;
 use super::{fetch_task, TaskStatus};
 use super::{TaskContext, TaskControlBlock};
+use crate::config::PAGE_SIZE;
+use crate::mm::{VirtAddr, VirtPageNum, MapPermission, VPNRange};
 use crate::sync::UPSafeCell;
 use crate::syscall::TaskInfo;
 use crate::timer::get_time_ms;
@@ -50,6 +52,74 @@ impl Processor {
     }
 }
 
+/// for map & unmap
+impl Processor {
+    fn task_map(&self, start: usize, len: usize, port: usize) -> isize {
+        if start & (PAGE_SIZE - 1) != 0 {
+            println!(
+                "expect the start address to be aligned with a page, but get an invalid start: {:#x}",
+                start
+            );
+            return -1;
+        }
+        // port最低三位[x w r]，其他位必须为0
+        if port > 7usize || port == 0 {
+            println!("invalid port: {:#b}", port);
+            return -1;
+        }
+
+        let task = self.current().unwrap();
+        let mut inner = task.inner_exclusive_access();
+        let memory_set = &mut inner.memory_set;
+
+        // check valid
+        let start_vpn = VirtPageNum::from(VirtAddr(start));
+        let end_vpn = VirtPageNum::from(VirtAddr(start + len).ceil());
+        for vpn in start_vpn.0..end_vpn.0 {
+            if let Some(pte) = memory_set.translate(VirtPageNum(vpn)) {
+                if pte.is_valid() {
+                    println!("vpn {} has been occupied!", vpn);
+                    return -1;
+                }
+            }
+        }
+
+        let permission = MapPermission::from_bits((port as u8) << 1).unwrap() | MapPermission::U;
+        memory_set.insert_framed_area(VirtAddr(start), VirtAddr(start + len), permission);
+        0
+    }
+
+    fn task_munmap(&self, start: usize, len: usize) -> isize {
+        if start & (PAGE_SIZE - 1) != 0 {
+            println!(
+                "expect the start address to be aligned with a page, but get an invalid start: {:#x}",
+                start
+            );
+            return -1;
+        }
+
+
+        let task = self.current().unwrap();
+        let mut inner = task.inner_exclusive_access();
+        let memory_set = &mut inner.memory_set;
+
+        // check valid
+        let start_vpn = VirtPageNum::from(VirtAddr(start));
+        let end_vpn = VirtPageNum::from(VirtAddr(start + len).ceil());
+        for vpn in start_vpn.0 .. end_vpn.0 {
+            if let Some(pte) = memory_set.translate(VirtPageNum(vpn)) {
+                if !pte.is_valid() {
+                    println!("vpn {} is not valid before unmap", vpn);
+                    return -1;
+                }
+            }
+        }
+
+        let vpn_range = VPNRange::new(start_vpn, end_vpn);
+        memory_set.munmap(vpn_range);
+        0
+    }
+}
 lazy_static! {
     /// PROCESSOR instance through lazy_static!
     pub static ref PROCESSOR: UPSafeCell<Processor> = unsafe { UPSafeCell::new(Processor::new()) };
@@ -131,4 +201,15 @@ pub fn get_current_task_info(ti: *mut TaskInfo) {
             time: get_time_ms() - inner.start_time,
         };
     }
+}
+
+/// for lab. map
+pub fn task_mmap(start: usize, len: usize, port: usize) -> isize {
+    PROCESSOR.exclusive_access().task_map(start, len, port)
+}
+
+/// for lab. unmap
+/// for lab. unmap
+pub fn task_munmap(start: usize, len: usize) -> isize {
+    PROCESSOR.exclusive_access().task_munmap(start, len)
 }
