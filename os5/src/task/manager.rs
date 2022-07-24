@@ -8,7 +8,7 @@ use crate::sync::UPSafeCell;
 use alloc::collections::VecDeque;
 use alloc::sync::Arc;
 use lazy_static::*;
-
+use crate::config::BIG_STRIDE;
 pub struct TaskManager {
     ready_queue: VecDeque<Arc<TaskControlBlock>>,
 }
@@ -24,8 +24,11 @@ impl TaskManager {
     /// Add process back to ready queue
     pub fn add(&mut self, task: Arc<TaskControlBlock>) {
         // insert the new task into a proper position
-        let pass = task.inner_exclusive_access().pass;
+        let inner = task.inner_exclusive_access();
+        let pass = inner.pass;
+        // let prio = inner.priority;
         // drop the ownership of inner
+        drop(inner);
 
         let len = self.ready_queue.len();
         for idx in 0..len {
@@ -33,6 +36,7 @@ impl TaskManager {
             let pass1 = queue_task.inner_exclusive_access().pass;
             // keep the queue head owns the smallest pass
             if pass < pass1 {
+                // println!("new task priority: {}, pass: {}, inserted before idx {}", prio, pass, idx);
                 self.ready_queue.insert(idx, task);
                 return
             }
@@ -42,6 +46,21 @@ impl TaskManager {
 
     /// Take a process out of the ready queue
     pub fn fetch(&mut self) -> Option<Arc<TaskControlBlock>> {
+        // if let Some((idx, task)) = self
+        //     .ready_queue
+        //     .iter()
+        //     .enumerate()
+        //     .min_by_key(|(_, task)| task.inner_exclusive_access().pass)
+        // {
+        //     // Add a stride to the task
+        //     let mut task_inner = task.inner_exclusive_access();
+        //     task_inner.pass = task_inner.pass + BIG_STRIDE / task_inner.priority;
+        //     drop(task_inner);
+            
+        //     self.ready_queue.remove(idx)
+        // } else {
+        //     None
+        // }
         self.ready_queue.pop_front()
     }
 }

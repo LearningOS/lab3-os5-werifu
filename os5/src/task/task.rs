@@ -151,6 +151,8 @@ impl TaskControlBlock {
         inner.start_time = get_time_ms();
         // reset the priority
         inner.priority = 16;
+        // reset the pass
+        inner.pass = 0;
         // initialize trap_cx
         let trap_cx = inner.get_trap_cx();
         *trap_cx = TrapContext::app_init_context(
@@ -192,7 +194,7 @@ impl TaskControlBlock {
                     syscall_times: parent_inner.syscall_times,
                     start_time: parent_inner.start_time,
                     priority: parent_inner.priority,
-                    pass: parent_inner.pass,
+                    pass: 0,
                 })
             },
         });

@@ -43,8 +43,9 @@ pub fn suspend_current_and_run_next() {
     let task_cx_ptr = &mut task_inner.task_cx as *mut TaskContext;
     // Change status to Ready
     task_inner.task_status = TaskStatus::Ready;
-    // Add a stride to the task
-    task_inner.pass = task_inner.pass + BIG_STRIDE / task_inner.priority;
+    let new_pass = task_inner.pass + BIG_STRIDE / task_inner.priority;
+    // println!("{}", task_inner.priority);
+    task_inner.pass = new_pass;
     drop(task_inner);
     // ---- release current PCB
 
