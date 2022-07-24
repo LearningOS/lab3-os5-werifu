@@ -24,10 +24,8 @@ impl TaskManager {
     /// Add process back to ready queue
     pub fn add(&mut self, task: Arc<TaskControlBlock>) {
         // insert the new task into a proper position
-        let inner = task.inner_exclusive_access();
-        let pass = inner.pass;
+        let pass = task.inner_exclusive_access().pass;
         // drop the ownership of inner
-        drop(inner);
 
         let len = self.ready_queue.len();
         for idx in 0..len {

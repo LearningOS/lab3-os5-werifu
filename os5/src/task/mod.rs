@@ -19,6 +19,7 @@ mod task;
 
 use crate::config::BIG_STRIDE;
 use crate::loader::get_app_data_by_name;
+use crate::sbi::shutdown;
 use alloc::sync::Arc;
 pub use context::TaskContext;
 use lazy_static::*;
@@ -57,6 +58,9 @@ pub fn suspend_current_and_run_next() {
 pub fn exit_current_and_run_next(exit_code: i32) {
     // take from Processor
     let task = take_current_task().unwrap();
+    if task.getpid() == 0 {
+        shutdown();
+    }
     // **** access current TCB exclusively
     let mut inner = task.inner_exclusive_access();
     // Change status to Zombie
