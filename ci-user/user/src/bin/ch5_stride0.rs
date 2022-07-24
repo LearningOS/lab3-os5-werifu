@@ -25,6 +25,7 @@ pub fn count_during(prio: isize) -> isize {
     loop {
         spin_delay();
         acc += 1;
+        println!("{}", prio);
         if acc % 400 == 0 {
             let time = get_time() - start_time;
             if time > MAX_TIME {
